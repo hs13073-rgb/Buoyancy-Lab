@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>互動式浮力實驗室 (終極全相容版)</title>
+    <style>
+        :root {
+            --primary: #2b6cb0;
+            --water: #4299e1;
+            --spring: #e53e3e;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f7fafc;
+            margin: 0;
+            padding: 20px;
+            color: #2d3748;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none; /* 徹底禁止手機網頁震動與橡皮筋回彈 */
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        h1, .subtitle { text-align: center; margin: 0 0 5px 0; }
+        h1 { color: var(--primary); }
+        .subtitle { color: #718096; margin-bottom: 20px; }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 360px 1fr;
+            gap: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .main-layout { grid-template-columns: 1fr; }
+        }
+
+        /* 實驗舞台 */
+        .lab-stage {
+            background: #f8fafc;
+            border: 2px dashed #cbd5e0;
+            border-radius: 8px;
+            height: 600px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* 彈簧秤系統 */
+        .spring-scale-system {
+            position: absolute;
+            top: 5px; 
+            left: 140px;
+            width: 80px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .scale-body {
+            width: 60px;
+            height: 140px;
+            background: #e2e8f0;
+            border: 2px solid #a0aec0;
+            border-radius: 4px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: grab;
+        }
+        .scale-body:active { cursor: grabbing; }
+
+        .scale-header { font-size: 11px; font-weight: bold; color: #4a5568; margin-top: 5px; }
+        .spring { width: 4px; background: var(--spring); margin-top: 5px; height: 30px; transition: height 0.05s linear; }
+        .pointer { width: 44px; height: 2px; background: red; }
+        
+        .hook {
+            width: 2px;
+            background: #4a5568;
+            height: 40px;
+            position: relative;
+        }
+        .hook::after {
+            content: "レ";
+            position: absolute;
+            bottom: -8px;
+            left: -3px;
+            font-weight: bold;
+            color: #4a5568;
+            font-size: 14px;
+        }
+
+        /* 掛載槽 */
+        .attached-slot {
+            width: 45px;
+            height: 80px;
+            margin-top: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* 金屬圓柱 */
+        .metal-cylinder {
+            width: 45px;
+            height: 80px; 
+            border: 1px solid #4a5568;
+            border-radius: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            position: relative;
+            cursor: grab;
+            z-index: 20;
+        }
+        
+        /* 紅色虛線 */
+        .metal-cylinder::after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            border-top: 2px dashed #ff0000;
+            z-index: 5;
+        }
+
+        #c-A { background: linear-gradient(90deg, #b7791f, #ecc94b, #b7791f); } 
+        #c-B { background: linear-gradient(90deg, #4a5568, #cbd5e0, #4a5568); } 
+        #c-C { background: linear-gradient(90deg, #718096, #e2e8f0, #718096); } 
+
+        /* 器材準備桌 */
+        .table-surface {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 110px;
+            background: #e2e8f0;
+            border-top: 3px solid #cbd5e0;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 0 10px;
+            box-sizing: border-box;
+            z-index: 5;
+        }
+
+        .cylinder-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            font-size: 11px;
+            font-weight: bold;
+            color: #4a5568;
+            width: 60px;
+            height: 100px;
+            justify-content: center;
+        }
+
+        /* 量筒 */
+        .cylinder-container {
+            position: absolute;
+            bottom: 115px;
+            left: 125px;
+            width: 110px;
+            height: 280px;
+            border: 4px solid #718096;
+            border-top: none;
+            border-radius: 0 0 12px 12px;
+            background: rgba(255,255,255,0.7);
+            display: flex;
+            flex-direction: column-reverse;
+            z-index: 2;
+        }
+
+        .water {
+            width: 100%;
+            background: rgba(66, 153, 225, 0.55);
+            height: 110px; 
+            position: relative;
+            transition: height 0.05s linear;
+        }
+
+        .tick { position: absolute; left: 0; width: 15px; height: 1px; background: #4a5568; }
+        .tick::after {
+            content: attr(data-ml);
+            position: absolute; left: 20px; top: -7px;
+            font-size: 10px; color: #4a5568; font-weight: bold;
+        }
+
+        /* 右側區塊 */
+        .right-column { display: flex; flex-direction: column; gap: 15px; }
+        .live-dash { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        @media (min-width: 600px) { .live-dash { grid-template-columns: repeat(4, 1fr); } }
+
+        .dash-card {
+            background: #ebf8ff; border: 1px solid #bee3f8;
+            padding: 12px; border-radius: 6px; text-align: center;
+        }
+        .dash-card .title { font-size: 12px; color: #2b6cb0; margin-bottom: 5px; }
+        .dash-card .value { font-size: 20px; font-weight: bold; color: #2c5282; }
+
+        table {
+            width: 100%; border-collapse: collapse; text-align: center;
+            background: white; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;
+        }
+        th { background-color: #edf2f7; color: #4a5568; padding: 10px; font-size: 13px; }
+        td { padding: 10px; border-top: 1px solid #e2e8f0; font-size: 13px; }
+        
+        .status-badge { background: #e2e8f0; padding: 2px 8px; border-radius: 10px; font-size: 12px; }
+        .achieved { background-color: #c6f6d5 !important; color: #22543d; font-weight: bold; }
+
+        .instruction-box {
+            background-color: #feebc8; border-left: 4px solid #dd6b20;
+            padding: 15px; border-radius: 4px; font-size: 14px; line-height: 1.6;
+        }
+
+        .btn-reset {
+            background-color: #e53e3e; color: white; border: none; padding: 8px 15px;
+            border-radius: 4px; cursor: pointer; font-weight: bold; align-self: flex-start;
+        }
+        .btn-reset:hover { background-color: #c53030; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>阿基米德浮力實驗室 (終極全相容版)</h1>
+    <div class="subtitle">操作方式：1. <b>點擊</b>或<b>拖曳</b>下方任一圓柱至掛鉤懸掛。 2. <b>拖曳</b>彈簧秤灰色主體向下拉。</div>
+    
+    <div class="main-layout">
+        <div class="lab-stage" id="stage">
+            <div class="spring-scale-system" id="scale-system">
+                <div class="scale-body" id="scale-handle">
+                    <div class="scale-header">彈簧秤</div>
+                    <div class="spring" id="v-spring"></div>
+                    <div class="pointer"></div>
+                </div>
+                <div class="hook"></div>
+                <div class="attached-slot" id="attached-slot"></div>
+            </div>
+
+            <div class="cylinder-container">
+                <div class="water" id="v-water">
+                    <div class="tick" style="bottom: 160px;" data-ml="250"></div>
+                    <div class="tick" style="bottom: 120px;" data-ml="200"></div>
+                    <div class="tick" style="bottom: 80px;" data-ml="150"></div>
+                    <div class="tick" style="bottom: 40px;" data-ml="100"></div>
+                </div>
+            </div>
+
+            <div class="table-surface" id="table-surface">
+                <div class="cylinder-wrapper" id="wrap-A">
+                    <div class="metal-cylinder" id="c-A" data-weight="200"></div>
+                    <span>圓柱甲</span>
+                </div>
+                <div class="cylinder-wrapper" id="wrap-B">
+                    <div class="metal-cylinder" id="c-B" data-weight="160"></div>
+                    <span>圓柱乙</span>
+                </div>
+                <div class="cylinder-wrapper" id="wrap-C">
+                    <div class="metal-cylinder" id="c-C" data-weight="100"></div>
+                    <span>圓柱丙</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="right-column">
+            <button class="btn-reset" onclick="resetExperiment()">🔄 更換圓柱重新實驗</button>
+            
+            <div class="live-dash">
+                <div class="dash-card">
+                    <div class="title">彈簧秤讀數</div>
+                    <div class="value" id="live-weight">0<span style="font-size:12px"> gW</span></div>
+                </div>
+                <div class="dash-card">
+                    <div class="title">量筒水面刻度</div>
+                    <div class="value" id="live-water">150<span style="font-size:12px"> mL</span></div>
+                </div>
+                <div class="dash-card">
+                    <div class="title">排開水體積</div>
+                    <div class="value" id="live-vd">0<span style="font-size:12px"> cm³</span></div>
+                </div>
+                <div class="dash-card">
+                    <div class="title">目前所受浮力</div>
+                    <div class="value" id="live-b" style="color:#e53e3e">0<span style="font-size:12px"> gW</span></div>
+                </div>
+            </div>
+
+            <h3>實驗紀錄表</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>操作流程目標</th>
+                        <th>物體代號</th>
+                        <th>彈簧秤讀數 (gW)</th>
+                        <th>量筒刻度 (mL)</th>
+                        <th>排開體積 (cm³)</th>
+                        <th>狀態</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr id="row-air">
+                        <td>1. 空氣中的重量</td>
+                        <td id="r1-id">--</td>
+                        <td id="r1-w">--</td>
+                        <td id="r1-v">--</td>
+                        <td>0</td>
+                        <td><span class="status-badge" id="badge-air">未達成</span></td>
+                    </tr>
+                    <tr id="row-half">
+                        <td>2. 沒入水中一半</td>
+                        <td id="r2-id">--</td>
+                        <td id="r2-w">--</td>
+                        <td id="r2-v">--</td>
+                        <td id="r2-vd">--</td>
+                        <td><span class="status-badge" id="badge-half">未達成</span></td>
+                    </tr>
+                    <tr id="row-full">
+                        <td>3. 完全沒入水中</td>
+                        <td id="r3-id">--</td>
+                        <td id="r3-w">--</td>
+                        <td id="r3-v">--</td>
+                        <td id="r3-vd">--</td>
+                        <td><span class="status-badge" id="badge-full">未達成</span></td>
+                    </tr>
+                    <tr id="row-deep">
+                        <td>4. 完全沒入（較深）</td>
+                        <td id="r4-id">--</td>
+                        <td id="r4-w">--</td>
+                        <td id="r4-v">--</td>
+                        <td id="r4-vd">--</td>
+                        <td><span class="status-badge" id="badge-deep">未達成</span></td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <div class="instruction-box">
+                <strong>💡 操作提示（相容所有裝置）：</strong><br>
+                • <b>懸掛圓柱</b>：用滑鼠或手指把下方任一個圓柱<b>往上拖曳</b>到畫面中央放開；或者直接<b>「點擊」</b>圓柱，它就會自動掛上去！<br>
+                • <b>操作彈簧秤</b>：按住彈簧秤灰色主體向下滑動。
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let W_AIR = 0;           
+    let CURRENT_ID = "--";
+    const V_TOTAL = 80;      
+    const V_START = 150;     
+    const WATER_LINE_TOP = 385; 
+
+    const scaleSystem = document.getElementById('scale-system');
+    const scaleHandle = document.getElementById('scale-handle');
+    const vSpring = document.getElementById('v-spring');
+    const vWater = document.getElementById('v-water');
+    const attachedSlot = document.getElementById('attached-slot');
+
+    const liveWeight = document.getElementById('live-weight');
+    const liveWater = document.getElementById('live-water');
+    const liveVd = document.getElementById('live-vd');
+    const liveB = document.getElementById('live-b');
+
+    // 全網頁頂層狀態機
+    let activeItem = null; // 'scale' 或 'cylinder'
+    let activeTargetElement = null;
+    let currentScaleY = 0;
+    let dragStartX = 0, dragStartY = 0;
+    let currentTransformX = 0, currentTransformY = 0;
+
+    // --- 彈簧秤點擊事件 ---
+    scaleHandle.addEventListener('mousedown', startScaleDrag);
+    scaleHandle.addEventListener('touchstart', startScaleDrag, {passive: false});
+
+    function startScaleDrag(e) {
+        if (W_AIR === 0) { alert("請先點擊或拖曳下方的金屬圓柱掛上彈簧秤！"); return; }
+        activeItem = 'scale';
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        dragStartY = clientY - currentScaleY;
+        e.preventDefault();
+    }
+
+    // --- 金屬塊點擊/拖曳事件 ---
+    document.querySelectorAll('.metal-cylinder').forEach(cyl => {
+        cyl.addEventListener('mousedown', (e) => startCylinderDrag(e, cyl));
+        cyl.addEventListener('touchstart', (e) => startCylinderDrag(e, cyl), {passive: false});
+        // 額外支援：直接點擊也能自動掛載（防止某些手機完全不給拖曳）
+        cyl.addEventListener('click', () => { if(W_AIR === 0) mountCylinder(cyl); });
+    });
+
+    function startCylinderDrag(e, cyl) {
+        if (W_AIR > 0) return;
+        activeItem = 'cylinder';
+        activeTargetElement = cyl;
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        dragStartX = clientX;
+        dragStartY = clientY;
+        e.preventDefault();
+    }
+
+    // --- 全域頂層事件捕捉 (100% 避免卡死斷訊) ---
+    window.addEventListener('mousemove', handleGlobalMove);
+    window.addEventListener('touchmove', handleGlobalMove, {passive: false});
+    window.addEventListener('mouseup', handleGlobalUp);
+    window.addEventListener('touchend', handleGlobalUp);
+
+    function handleGlobalMove(e) {
+        if (!activeItem) return;
+        e.preventDefault();
+
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+        if (activeItem === 'scale') {
+            currentScaleY = Math.max(0, Math.min(235, clientY - dragStartY));
+            scaleSystem.style.transform = `translateY(${currentScaleY}px)`;
+            calculatePhysics(currentScaleY);
+        } 
+        else if (activeItem === 'cylinder' && activeTargetElement) {
+            currentTransformX = clientX - dragStartX;
+            currentTransformY = clientY - dragStartY;
+            activeTargetElement.style.transform = `translate(${currentTransformX}px, ${currentTransformY}px)`;
+        }
+    }
+
+    function handleGlobalUp(e) {
+        if (!activeItem) return;
+
+        if (activeItem === 'cylinder' && activeTargetElement) {
+            // 只要 Y 軸向上拖曳超過 120 像素，即認定學生想將其掛上
+            if (currentTransformY < -120) {
+                mountCylinder(activeTargetElement);
+            } else {
+                activeTargetElement.style.transform = "none";
+            }
+        }
+
+        activeItem = null;
+        activeTargetElement = null;
+        currentTransformX = 0;
+        currentTransformY = 0;
+    }
+
+    // --- 掛載核心函式 ---
+    function mountCylinder(cyl) {
+        W_AIR = parseFloat(cyl.dataset.weight);
+        CURRENT_ID = cyl.parentNode.querySelector('span').innerText;
+
+        cyl.style.transform = "none";
+        attachedSlot.appendChild(cyl);
+
+        // 隱藏其他圓柱
+        document.querySelectorAll('.cylinder-wrapper').forEach(w => {
+            if(!w.contains(cyl)) w.style.visibility = 'hidden';
+        });
+
+        // 寫入空氣中重量紀錄
+        document.getElementById('r1-id').innerText = CURRENT_ID;
+        document.getElementById('r1-w').innerText = W_AIR;
+        document.getElementById('r1-v').innerText = V_START;
+        document.getElementById('row-air').classList.add('achieved');
+        document.getElementById('badge-air').innerText = "已記錄";
+        document.getElementById('badge-air').classList.add('achieved');
+
+        vSpring.style.height = (30 + (W_AIR / 200) * 15) + 'px';
+        calculatePhysics(0);
+    }
+
+    // --- 物理運算引擎 ---
+    function calculatePhysics(yOffset) {
+        if (W_AIR === 0) return;
+
+        const topPx = 5 + yOffset;
+        const cylTop = topPx + 140 + 40 + 5; 
+        const cylBottom = cylTop + 80;    
+
+        let vDisplaced = 0;
+        let currentWaterLine = WATER_LINE_TOP; 
+
+        for(let i=0; i<3; i++) {
+            if (cylBottom <= currentWaterLine) {
+                vDisplaced = 0; 
+            } else if (cylTop >= currentWaterLine) {
+                vDisplaced = V_TOTAL; 
+            } else {
+                let submergedLength = cylBottom - currentWaterLine;
+                let ratio = submergedLength / 80; 
+                vDisplaced = V_TOTAL * ratio;
+            }
+            currentWaterLine = WATER_LINE_TOP - (vDisplaced * 0.9);
+        }
+
+        let buoyancy = vDisplaced * 1.0; 
+        let currentWeight = W_AIR - buoyancy;
+        let waterVolume = V_START + vDisplaced;
+
+        // 更新即時數字
+        liveWeight.innerHTML = `${currentWeight.toFixed(1)}<span style="font-size:12px"> gW</span>`;
+        liveWater.innerHTML = `${waterVolume.toFixed(1)}<span style="font-size:12px"> mL</span>`;
+        liveVd.innerHTML = `${vDisplaced.toFixed(1)}<span style="font-size:12px"> cm³</span>`;
+        liveB.innerHTML = `${buoyancy.toFixed(1)}<span style="font-size:12px"> gW</span>`;
+
+        // 彈簧長度隨浮力動態增減
+        let baseSpring = 30 + (W_AIR / 200) * 15;
+        vSpring.style.height = (baseSpring - (buoyancy / 200) * 15) + 'px';
+        vWater.style.height = (110 + vDisplaced * 0.9) + 'px';
+
+        // 紀錄表觸發判定
+        if (vDisplaced >= 35 && vDisplaced <= 45) {
+            recordData('half', currentWeight, waterVolume, vDisplaced);
+        } 
+        else if (Math.abs(vDisplaced - 80) < 0.1 && yOffset >= 130 && yOffset < 185) {
+            recordData('full', currentWeight, waterVolume, vDisplaced);
+        } 
+        else if (Math.abs(vDisplaced - 80) < 0.1 && yOffset >= 210) {
+            recordData('deep', currentWeight, waterVolume, vDisplaced);
+        }
+    }
+
+    function recordData(stage, w, v, vd) {
+        const row = document.getElementById(`row-${stage}`);
+        const badge = document.getElementById(`badge-${stage}`);
+        
+        if (row && !row.classList.contains('achieved')) {
+            row.classList.add('achieved');
+            badge.innerText = "已記錄";
+            badge.classList.add('achieved');
+            
+            let idx = (stage==='half') ? 2 : (stage==='full') ? 3 : 4;
+            document.getElementById(`r${idx}-id`).innerText = CURRENT_ID;
+            document.getElementById(`r${idx}-w`).innerText = w.toFixed(0);
+            document.getElementById(`r${idx}-v`).innerText = v.toFixed(0);
+            document.getElementById(`r${idx}-vd`).innerText = vd.toFixed(0);
+        }
+    }
+
+    // --- 完全重設實驗室 ---
+    function resetExperiment() {
+        W_AIR = 0;
+        CURRENT_ID = "--";
+        currentScaleY = 0;
+        scaleSystem.style.transform = `translateY(0px)`;
+        vSpring.style.height = '30px';
+        vWater.style.height = '110px';
+
+        const attachedObj = attachedSlot.querySelector('.metal-cylinder');
+        if (attachedObj) {
+            if (attachedObj.id === 'c-A') document.getElementById('wrap-A').insertBefore(attachedObj, document.getElementById('wrap-A').firstChild);
+            if (attachedObj.id === 'c-B') document.getElementById('wrap-B').insertBefore(attachedObj, document.getElementById('wrap-B').firstChild);
+            if (attachedObj.id === 'c-C') document.getElementById('wrap-C').insertBefore(attachedObj, document.getElementById('wrap-C').firstChild);
+        }
+
+        document.querySelectorAll('.cylinder-wrapper').forEach(w => {
+            w.style.visibility = 'visible';
+            const c = w.querySelector('.metal-cylinder');
+            if(c) c.style.transform = "none";
+        });
+
+        liveWeight.innerHTML = `0<span style="font-size:12px"> gW</span>`;
+        liveWater.innerHTML = `150<span style="font-size:12px"> mL</span>`;
+        liveVd.innerHTML = `0<span style="font-size:12px"> cm³</span>`;
+        liveB.innerHTML = `0<span style="font-size:12px"> gW</span>`;
+
+        const stages = ['air', 'half', 'full', 'deep'];
+        stages.forEach((st, idx) => {
+            const row = document.getElementById(`row-${st}`);
+            const badge = document.getElementById(`badge-${st}`);
+            row.classList.remove('achieved');
+            badge.innerText = "未達成";
+            badge.classList.remove('achieved');
+            document.getElementById(`r${idx+1}-id`).innerText = "--";
+            document.getElementById(`r${idx+1}-w`).innerText = "--";
+            document.getElementById(`r${idx+1}-v`).innerText = "--";
+            if (idx > 0) document.getElementById(`r${idx+1}-vd`).innerText = "--";
+        });
+    }
+</script>
+
+</body>
+</html>
