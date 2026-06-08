@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>互動式浮力實驗室 (終極全相容版)</title>
+    <title>互動式浮力實驗室 (真實量筒刻度版)</title>
     <style>
         :root {
             --primary: #2b6cb0;
-            --water: #4299e1;
+            --water: rgba(66, 153, 225, 0.6);
             --spring: #e53e3e;
         }
 
@@ -17,9 +17,6 @@
             margin: 0;
             padding: 20px;
             color: #2d3748;
-            user-select: none;
-            -webkit-user-select: none;
-            touch-action: none; /* 徹底禁止手機網頁震動與橡皮筋回彈 */
         }
 
         .container {
@@ -76,12 +73,10 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            cursor: grab;
         }
-        .scale-body:active { cursor: grabbing; }
 
         .scale-header { font-size: 11px; font-weight: bold; color: #4a5568; margin-top: 5px; }
-        .spring { width: 4px; background: var(--spring); margin-top: 5px; height: 30px; transition: height 0.05s linear; }
+        .spring { width: 4px; background: var(--spring); margin-top: 5px; height: 30px; }
         .pointer { width: 44px; height: 2px; background: red; }
         
         .hook {
@@ -121,7 +116,6 @@
             justify-content: center;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             position: relative;
-            cursor: grab;
             z-index: 20;
         }
         
@@ -145,7 +139,7 @@
             position: absolute;
             bottom: 0;
             width: 100%;
-            height: 110px;
+            height: 140px;
             background: #e2e8f0;
             border-top: 3px solid #cbd5e0;
             display: flex;
@@ -164,44 +158,105 @@
             font-size: 11px;
             font-weight: bold;
             color: #4a5568;
-            width: 60px;
-            height: 100px;
+            width: 90px;
+            height: 130px;
             justify-content: center;
         }
 
-        /* 量筒 */
+        .btn-mount {
+            background-color: #4a5568;
+            color: white;
+            border: none;
+            padding: 4px 6px;
+            font-size: 11px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 2px;
+        }
+        .btn-mount:hover { background-color: #2d3748; }
+
+        /* --- 【精準優化】量筒容器：總高度 250px，對應 0 ~ 250 mL --- */
         .cylinder-container {
             position: absolute;
-            bottom: 115px;
+            bottom: 145px;
             left: 125px;
-            width: 110px;
-            height: 280px;
+            width: 120px;
+            height: 250px; 
             border: 4px solid #718096;
             border-top: none;
             border-radius: 0 0 12px 12px;
-            background: rgba(255,255,255,0.7);
+            background: rgba(255,255,255,0.8);
             display: flex;
-            flex-direction: column-reverse;
+            flex-direction: column;
+            justify-content: flex-end;
             z-index: 2;
         }
 
+        /* 水面圖層：1mL = 1px，完美直覺對齊 */
         .water {
             width: 100%;
-            background: rgba(66, 153, 225, 0.55);
-            height: 110px; 
+            background: var(--water);
+            height: 0px; 
             position: relative;
-            transition: height 0.05s linear;
+            border-top: 2px solid #2b6cb0;
         }
 
-        .tick { position: absolute; left: 0; width: 15px; height: 1px; background: #4a5568; }
+        /* 刻度線：基準點為最底部的 0 mL */
+        .tick { 
+            position: absolute; 
+            left: 0; 
+            width: 20px; 
+            height: 1px; 
+            background: #4a5568; 
+            z-index: 3;
+        }
         .tick::after {
             content: attr(data-ml);
-            position: absolute; left: 20px; top: -7px;
-            font-size: 10px; color: #4a5568; font-weight: bold;
+            position: absolute; 
+            left: 25px; 
+            top: -7px;
+            font-size: 11px; 
+            color: #2d3748; 
+            font-weight: bold;
         }
 
         /* 右側區塊 */
         .right-column { display: flex; flex-direction: column; gap: 15px; }
+        
+        .control-panel {
+            background: #edf2f7;
+            padding: 12px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border: 1px solid #cbd5e0;
+        }
+        .control-panel label { font-weight: bold; font-size: 14px; }
+        .control-panel input[type="number"] { width: 60px; padding: 6px; border-radius: 4px; border: 1px solid #a0aec0; text-align: center; font-size: 14px; }
+        
+        .btn-water { background-color: #3182ce; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+
+        /* 滑桿控制區 */
+        .slider-panel {
+            background: #feebc8;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #fbd38d;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .slider-panel label { font-weight: bold; font-size: 14px; color: #dd6b20; }
+        .depth-slider {
+            width: 100%;
+            height: 15px;
+            border-radius: 5px;
+            background: #cbd5e0;
+            outline: none;
+            cursor: pointer;
+        }
+
         .live-dash { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
         @media (min-width: 600px) { .live-dash { grid-template-columns: repeat(4, 1fr); } }
 
@@ -222,28 +277,23 @@
         .status-badge { background: #e2e8f0; padding: 2px 8px; border-radius: 10px; font-size: 12px; }
         .achieved { background-color: #c6f6d5 !important; color: #22543d; font-weight: bold; }
 
-        .instruction-box {
-            background-color: #feebc8; border-left: 4px solid #dd6b20;
-            padding: 15px; border-radius: 4px; font-size: 14px; line-height: 1.6;
-        }
-
+        .btn-actions { display: flex; gap: 10px; }
         .btn-reset {
             background-color: #e53e3e; color: white; border: none; padding: 8px 15px;
-            border-radius: 4px; cursor: pointer; font-weight: bold; align-self: flex-start;
+            border-radius: 4px; cursor: pointer; font-weight: bold;
         }
-        .btn-reset:hover { background-color: #c53030; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>阿基米德浮力實驗室 (終極全相容版)</h1>
-    <div class="subtitle">操作方式：1. <b>點擊</b>或<b>拖曳</b>下方任一圓柱至掛鉤懸掛。 2. <b>拖曳</b>彈簧秤灰色主體向下拉。</div>
+    <h1>阿基米德浮力實驗室 (真實量筒版)</h1>
+    <div class="subtitle">操作順序：1. 注入初始水量 ➡️ 2. 點擊【📌 掛上此物】 ➡️ 3. 往右拉動下方橘色區塊的「高度調整拉桿」</div>
     
     <div class="main-layout">
         <div class="lab-stage" id="stage">
             <div class="spring-scale-system" id="scale-system">
-                <div class="scale-body" id="scale-handle">
+                <div class="scale-body">
                     <div class="scale-header">彈簧秤</div>
                     <div class="spring" id="v-spring"></div>
                     <div class="pointer"></div>
@@ -253,32 +303,51 @@
             </div>
 
             <div class="cylinder-container">
-                <div class="water" id="v-water">
-                    <div class="tick" style="bottom: 160px;" data-ml="250"></div>
-                    <div class="tick" style="bottom: 120px;" data-ml="200"></div>
-                    <div class="tick" style="bottom: 80px;" data-ml="150"></div>
-                    <div class="tick" style="bottom: 40px;" data-ml="100"></div>
-                </div>
+                <div class="water" id="v-water"></div>
+                
+                <div class="tick" style="bottom: 0px;" data-ml="0"></div>
+                <div class="tick" style="bottom: 50px;" data-ml="50"></div>
+                <div class="tick" style="bottom: 100px;" data-ml="100"></div>
+                <div class="tick" style="bottom: 150px;" data-ml="150"></div>
+                <div class="tick" style="bottom: 200px;" data-ml="200"></div>
+                <div class="tick" style="bottom: 250px;" data-ml="250"></div>
             </div>
 
             <div class="table-surface" id="table-surface">
                 <div class="cylinder-wrapper" id="wrap-A">
                     <div class="metal-cylinder" id="c-A" data-weight="200"></div>
                     <span>圓柱甲</span>
+                    <button class="btn-mount" onclick="mountCylinderDirect('c-A')">📌 掛上此物</button>
                 </div>
                 <div class="cylinder-wrapper" id="wrap-B">
                     <div class="metal-cylinder" id="c-B" data-weight="160"></div>
                     <span>圓柱乙</span>
+                    <button class="btn-mount" onclick="mountCylinderDirect('c-B')">📌 掛上此物</button>
                 </div>
                 <div class="cylinder-wrapper" id="wrap-C">
                     <div class="metal-cylinder" id="c-C" data-weight="100"></div>
                     <span>圓柱丙</span>
+                    <button class="btn-mount" onclick="mountCylinderDirect('c-C')">📌 掛上此物</button>
                 </div>
             </div>
         </div>
 
         <div class="right-column">
-            <button class="btn-reset" onclick="resetExperiment()">🔄 更換圓柱重新實驗</button>
+            <div class="control-panel">
+                <label for="input-water">初始水量：</label>
+                <input type="number" id="input-water" value="150" min="50" max="170">
+                <span style="font-weight: bold; font-size:14px; margin-right:5px;">mL</span>
+                <button class="btn-water" id="btn-add-water" onclick="updateWaterVolume()">確定注入</button>
+            </div>
+
+            <div class="slider-panel">
+                <label for="depth-range">⚙️ 調整彈簧秤高度（請向右拖曳滑桿）：</label>
+                <input type="range" id="depth-range" class="depth-slider" min="0" max="320" value="0" oninput="handleSliderChange(this.value)">
+            </div>
+
+            <div class="btn-actions">
+                <button class="btn-reset" onclick="resetExperiment()">🔄 更換圓柱重新實驗</button>
+            </div>
             
             <div class="live-dash">
                 <div class="dash-card">
@@ -346,12 +415,6 @@
                     </tr>
                 </tbody>
             </table>
-            
-            <div class="instruction-box">
-                <strong>💡 操作提示（相容所有裝置）：</strong><br>
-                • <b>懸掛圓柱</b>：用滑鼠或手指把下方任一個圓柱<b>往上拖曳</b>到畫面中央放開；或者直接<b>「點擊」</b>圓柱，它就會自動掛上去！<br>
-                • <b>操作彈簧秤</b>：按住彈簧秤灰色主體向下滑動。
-            </div>
         </div>
     </div>
 </div>
@@ -359,12 +422,11 @@
 <script>
     let W_AIR = 0;           
     let CURRENT_ID = "--";
-    const V_TOTAL = 80;      
-    const V_START = 150;     
-    const WATER_LINE_TOP = 385; 
+    const V_TOTAL = 80;      // 圓柱總體積為 80 cm³，高度為 80px
+    let V_START = 150;     
+    let firstFullSliderValue = -1; 
 
     const scaleSystem = document.getElementById('scale-system');
-    const scaleHandle = document.getElementById('scale-handle');
     const vSpring = document.getElementById('v-spring');
     const vWater = document.getElementById('v-water');
     const attachedSlot = document.getElementById('attached-slot');
@@ -373,102 +435,49 @@
     const liveWater = document.getElementById('live-water');
     const liveVd = document.getElementById('live-vd');
     const liveB = document.getElementById('live-b');
+    const depthSlider = document.getElementById('depth-range');
 
-    // 全網頁頂層狀態機
-    let activeItem = null; // 'scale' 或 'cylinder'
-    let activeTargetElement = null;
-    let currentScaleY = 0;
-    let dragStartX = 0, dragStartY = 0;
-    let currentTransformX = 0, currentTransformY = 0;
-
-    // --- 彈簧秤點擊事件 ---
-    scaleHandle.addEventListener('mousedown', startScaleDrag);
-    scaleHandle.addEventListener('touchstart', startScaleDrag, {passive: false});
-
-    function startScaleDrag(e) {
-        if (W_AIR === 0) { alert("請先點擊或拖曳下方的金屬圓柱掛上彈簧秤！"); return; }
-        activeItem = 'scale';
-        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-        dragStartY = clientY - currentScaleY;
-        e.preventDefault();
+    // 1mL = 1px 映射公式
+    function getWaterPxHeight(vol) {
+        return vol;
     }
 
-    // --- 金屬塊點擊/拖曳事件 ---
-    document.querySelectorAll('.metal-cylinder').forEach(cyl => {
-        cyl.addEventListener('mousedown', (e) => startCylinderDrag(e, cyl));
-        cyl.addEventListener('touchstart', (e) => startCylinderDrag(e, cyl), {passive: false});
-        // 額外支援：直接點擊也能自動掛載（防止某些手機完全不給拖曳）
-        cyl.addEventListener('click', () => { if(W_AIR === 0) mountCylinder(cyl); });
-    });
+    // 初始化水面（150mL = 150px 高度）
+    vWater.style.height = getWaterPxHeight(V_START) + 'px';
+    liveWater.innerHTML = `${V_START}<span style="font-size:12px"> mL</span>`;
 
-    function startCylinderDrag(e, cyl) {
+    function updateWaterVolume() {
+        if (W_AIR > 0) {
+            alert("實驗進行中無法更改水量！請先點擊「更換圓柱重新實驗」。");
+            return;
+        }
+        const inputVal = parseInt(document.getElementById('input-water').value);
+        if (isNaN(inputVal) || inputVal < 50 || inputVal > 170) {
+            alert("請輸入 50 至 170 mL 之間的水量（預留圓柱排開空間）！");
+            return;
+        }
+        V_START = inputVal;
+        vWater.style.height = getWaterPxHeight(V_START) + 'px';
+        liveWater.innerHTML = `${V_START}<span style="font-size:12px"> mL</span>`;
+    }
+
+    function mountCylinderDirect(id) {
         if (W_AIR > 0) return;
-        activeItem = 'cylinder';
-        activeTargetElement = cyl;
-        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-        dragStartX = clientX;
-        dragStartY = clientY;
-        e.preventDefault();
-    }
+        
+        const cyl = document.getElementById(id);
+        document.getElementById('btn-add-water').disabled = true;
+        document.getElementById('input-water').disabled = true;
 
-    // --- 全域頂層事件捕捉 (100% 避免卡死斷訊) ---
-    window.addEventListener('mousemove', handleGlobalMove);
-    window.addEventListener('touchmove', handleGlobalMove, {passive: false});
-    window.addEventListener('mouseup', handleGlobalUp);
-    window.addEventListener('touchend', handleGlobalUp);
-
-    function handleGlobalMove(e) {
-        if (!activeItem) return;
-        e.preventDefault();
-
-        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-
-        if (activeItem === 'scale') {
-            currentScaleY = Math.max(0, Math.min(235, clientY - dragStartY));
-            scaleSystem.style.transform = `translateY(${currentScaleY}px)`;
-            calculatePhysics(currentScaleY);
-        } 
-        else if (activeItem === 'cylinder' && activeTargetElement) {
-            currentTransformX = clientX - dragStartX;
-            currentTransformY = clientY - dragStartY;
-            activeTargetElement.style.transform = `translate(${currentTransformX}px, ${currentTransformY}px)`;
-        }
-    }
-
-    function handleGlobalUp(e) {
-        if (!activeItem) return;
-
-        if (activeItem === 'cylinder' && activeTargetElement) {
-            // 只要 Y 軸向上拖曳超過 120 像素，即認定學生想將其掛上
-            if (currentTransformY < -120) {
-                mountCylinder(activeTargetElement);
-            } else {
-                activeTargetElement.style.transform = "none";
-            }
-        }
-
-        activeItem = null;
-        activeTargetElement = null;
-        currentTransformX = 0;
-        currentTransformY = 0;
-    }
-
-    // --- 掛載核心函式 ---
-    function mountCylinder(cyl) {
         W_AIR = parseFloat(cyl.dataset.weight);
         CURRENT_ID = cyl.parentNode.querySelector('span').innerText;
 
-        cyl.style.transform = "none";
         attachedSlot.appendChild(cyl);
 
-        // 隱藏其他圓柱
         document.querySelectorAll('.cylinder-wrapper').forEach(w => {
             if(!w.contains(cyl)) w.style.visibility = 'hidden';
         });
 
-        // 寫入空氣中重量紀錄
+        // 紀錄空氣中數據
         document.getElementById('r1-id').innerText = CURRENT_ID;
         document.getElementById('r1-w').innerText = W_AIR;
         document.getElementById('r1-v').innerText = V_START;
@@ -477,57 +486,100 @@
         document.getElementById('badge-air').classList.add('achieved');
 
         vSpring.style.height = (30 + (W_AIR / 200) * 15) + 'px';
+        
+        depthSlider.value = 0;
+        firstFullSliderValue = -1;
         calculatePhysics(0);
     }
 
-    // --- 物理運算引擎 ---
+    function handleSliderChange(val) {
+        if (W_AIR === 0) {
+            alert("請先點擊下方器材桌的【📌 掛上此物】按鈕！");
+            depthSlider.value = 0;
+            return;
+        }
+        const yOffset = parseFloat(val);
+        scaleSystem.style.transform = `translateY(${yOffset}px)`;
+        calculatePhysics(yOffset);
+    }
+
+    // --- 真實量筒物理演算引擎 ---
     function calculatePhysics(yOffset) {
         if (W_AIR === 0) return;
 
-        const topPx = 5 + yOffset;
-        const cylTop = topPx + 140 + 40 + 5; 
-        const cylBottom = cylTop + 80;    
+        /* 【全新精準幾何座標映射】
+           • 舞台總高度 = 600px
+           • 量筒容器的 bottom 設為 145px，高度為 250px。
+             量筒底部在舞台上的絕對位置是：600 - 145 = 455px。
+           • 初始水面的絕對 Y 座標（因為底部是 0，直接往上減去像素高度）：
+             initialWaterTopY = 455 - getWaterPxHeight(V_START)
+           
+           • 懸掛系統幾何鏈：
+             起始位置 top = 5px。
+             秤身(140px) + 掛鉤(40px) + 插槽微調(15px) = 195px。
+             金屬塊頂端 Y 座標 = 5 + yOffset + 195 = 200 + yOffset。
+             金屬塊底端 Y 座標 = 200 + yOffset + 80 = 280 + yOffset。
+        */
+
+        const stageCylinderBottomY = 455; 
+        const initialWaterTopY = stageCylinderBottomY - getWaterPxHeight(V_START);
+
+        const cylTopY = 200 + yOffset;
+        const cylBottomY = cylTopY + 80;
 
         let vDisplaced = 0;
-        let currentWaterLine = WATER_LINE_TOP; 
+        let currentWaterTopY = initialWaterTopY;
 
-        for(let i=0; i<3; i++) {
-            if (cylBottom <= currentWaterLine) {
-                vDisplaced = 0; 
-            } else if (cylTop >= currentWaterLine) {
-                vDisplaced = V_TOTAL; 
+        // 水面抬升逼近法
+        for(let i = 0; i < 5; i++) {
+            if (cylBottomY <= currentWaterTopY) {
+                vDisplaced = 0;
+            } else if (cylTopY >= currentWaterTopY) {
+                vDisplaced = V_TOTAL;
             } else {
-                let submergedLength = cylBottom - currentWaterLine;
-                let ratio = submergedLength / 80; 
-                vDisplaced = V_TOTAL * ratio;
+                let submergedLength = cylBottomY - currentWaterTopY;
+                vDisplaced = submergedLength; 
             }
-            currentWaterLine = WATER_LINE_TOP - (vDisplaced * 0.9);
+            currentWaterTopY = initialWaterTopY - vDisplaced;
         }
 
+        vDisplaced = Math.max(0, Math.min(V_TOTAL, vDisplaced));
+
+        // 計算物理輸出
         let buoyancy = vDisplaced * 1.0; 
-        let currentWeight = W_AIR - buoyancy;
+        let currentWeight = Math.max(0, W_AIR - buoyancy);
         let waterVolume = V_START + vDisplaced;
 
-        // 更新即時數字
+        // 看版數據即時渲染
         liveWeight.innerHTML = `${currentWeight.toFixed(1)}<span style="font-size:12px"> gW</span>`;
         liveWater.innerHTML = `${waterVolume.toFixed(1)}<span style="font-size:12px"> mL</span>`;
         liveVd.innerHTML = `${vDisplaced.toFixed(1)}<span style="font-size:12px"> cm³</span>`;
         liveB.innerHTML = `${buoyancy.toFixed(1)}<span style="font-size:12px"> gW</span>`;
 
-        // 彈簧長度隨浮力動態增減
+        // 視覺外觀 1:1 精準繪製
         let baseSpring = 30 + (W_AIR / 200) * 15;
         vSpring.style.height = (baseSpring - (buoyancy / 200) * 15) + 'px';
-        vWater.style.height = (110 + vDisplaced * 0.9) + 'px';
+        vWater.style.height = (getWaterPxHeight(V_START) + vDisplaced) + 'px';
 
-        // 紀錄表觸發判定
-        if (vDisplaced >= 35 && vDisplaced <= 45) {
+        // --- 智慧捕捉表格邏輯 ---
+        // 2. 沒入一半 (排開體積在 36 ~ 44 之間)
+        if (vDisplaced >= 36 && vDisplaced <= 44) {
             recordData('half', currentWeight, waterVolume, vDisplaced);
         } 
-        else if (Math.abs(vDisplaced - 80) < 0.1 && yOffset >= 130 && yOffset < 185) {
-            recordData('full', currentWeight, waterVolume, vDisplaced);
-        } 
-        else if (Math.abs(vDisplaced - 80) < 0.1 && yOffset >= 210) {
-            recordData('deep', currentWeight, waterVolume, vDisplaced);
+        
+        // 3. 完全沒入水中 (體積滿 80)
+        if (vDisplaced >= 79.9) {
+            const isFullAchieved = document.getElementById('row-full').classList.contains('achieved');
+            
+            if (!isFullAchieved) {
+                firstFullSliderValue = yOffset;
+                recordData('full', currentWeight, waterVolume, vDisplaced);
+            } else {
+                // 4. 完全沒入較深 (往下多拉超過 20 單位)
+                if (firstFullSliderValue !== -1 && (yOffset - firstFullSliderValue) >= 20) {
+                    recordData('deep', currentWeight, waterVolume, vDisplaced);
+                }
+            }
         }
     }
 
@@ -548,14 +600,17 @@
         }
     }
 
-    // --- 完全重設實驗室 ---
     function resetExperiment() {
         W_AIR = 0;
         CURRENT_ID = "--";
-        currentScaleY = 0;
         scaleSystem.style.transform = `translateY(0px)`;
         vSpring.style.height = '30px';
-        vWater.style.height = '110px';
+        vWater.style.height = getWaterPxHeight(V_START) + 'px';
+        depthSlider.value = 0;
+        firstFullSliderValue = -1;
+
+        document.getElementById('btn-add-water').disabled = false;
+        document.getElementById('input-water').disabled = false;
 
         const attachedObj = attachedSlot.querySelector('.metal-cylinder');
         if (attachedObj) {
@@ -566,19 +621,17 @@
 
         document.querySelectorAll('.cylinder-wrapper').forEach(w => {
             w.style.visibility = 'visible';
-            const c = w.querySelector('.metal-cylinder');
-            if(c) c.style.transform = "none";
         });
 
         liveWeight.innerHTML = `0<span style="font-size:12px"> gW</span>`;
-        liveWater.innerHTML = `150<span style="font-size:12px"> mL</span>`;
+        liveWater.innerHTML = `${V_START}<span style="font-size:12px"> mL</span>`;
         liveVd.innerHTML = `0<span style="font-size:12px"> cm³</span>`;
         liveB.innerHTML = `0<span style="font-size:12px"> gW</span>`;
 
         const stages = ['air', 'half', 'full', 'deep'];
         stages.forEach((st, idx) => {
-            const row = document.getElementById(`row-${st}`);
-            const badge = document.getElementById(`badge-${st}`);
+            const row = document.getElementById('row-' + st);
+            const badge = document.getElementById('badge-' + st);
             row.classList.remove('achieved');
             badge.innerText = "未達成";
             badge.classList.remove('achieved');
